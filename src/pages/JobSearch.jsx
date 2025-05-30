@@ -135,7 +135,9 @@ const JobSearch = () => {
   useEffect(() => {
     setLoading(true);
     axios
-      .get("http://localhost:8080/v1/assessment/jobs/all")
+      .get(
+        "https://oneplace-hr-326159028339.asia-southeast1.run.app/v1/assessment/jobs/all"
+      )
       .then((data) => {
         setList(data.data);
         setLoading(false);

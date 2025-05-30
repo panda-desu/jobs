@@ -60,7 +60,9 @@ const Companies = () => {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:8080/v1/assessment/companies`)
+      .get(
+        `https://oneplace-hr-326159028339.asia-southeast1.run.app/v1/assessment/companies`
+      )
       .then((data) => {
         setList(data.data);
       })

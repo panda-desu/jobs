@@ -122,7 +122,9 @@ const CompaniesAss = () => {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:8080/v1/assessment/companies/${id}`)
+      .get(
+        `https://oneplace-hr-326159028339.asia-southeast1.run.app/v1/assessment/companies/${id}`
+      )
       .then((data) => {
         setData(data.data);
       })
