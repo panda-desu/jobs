@@ -12,7 +12,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
         {/* About */}
         <div>
-          <p className="text-white text-lg font-semibold mb-4">MineJobs</p>
+          <p className="text-white text-lg font-semibold mb-4">Jobs</p>
           <p>
             The leading platform for mining professionals to find their next
             career opportunity.
@@ -102,7 +102,7 @@ const Footer = () => {
 
       {/* Bottom bar */}
       <div className="border-t border-gray-700 mt-12 pt-6 text-center text-sm text-gray-500">
-        © 2023 MineJobs. All rights reserved.
+        © 2023 Jobs. All rights reserved.
       </div>
     </footer>
   );
