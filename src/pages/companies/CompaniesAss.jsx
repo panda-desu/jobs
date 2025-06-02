@@ -1,6 +1,8 @@
 import axios from "axios";
+import { AnimatePresence, motion } from "framer-motion";
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router";
+import { FiCalendar } from "react-icons/fi";
+import { useNavigate, useParams } from "react-router";
 
 const formatSalary = (value) => {
   if (value >= 1000000) {
@@ -10,97 +12,127 @@ const formatSalary = (value) => {
   }
 };
 
-const getPostedDaysAgo = (dateStr) => {
-  const today = new Date();
-  const posted = new Date(dateStr);
-  const diff = Math.floor((today - posted) / (1000 * 60 * 60 * 24));
-  return `${diff} хоногийн өмнө`;
-};
+function formatMongolianDate(isoString) {
+  const now = new Date();
+  const date = new Date(isoString);
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+  const diffWeek = Math.floor(diffDay / 7);
+  const diffMonth = Math.floor(diffDay / 30);
+  const diffYear = Math.floor(diffDay / 365);
+
+  if (diffSec < 60) return `${diffSec} сек өмнө`;
+  if (diffMin < 60) return `${diffMin} мин өмнө`;
+  if (diffHr < 24) return `${diffHr} цагийн өмнө`;
+  if (diffDay < 7) return `${diffDay} өдрийн өмнө`;
+  if (diffDay < 30) return `${diffWeek} 7 хоногийн өмнө`;
+  if (diffDay < 365) return `${diffMonth} сарын өмнө`;
+  return `${diffYear} жилийн өмнө`;
+}
 
 const Card = ({ data }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-white rounded-2xl shadow-md flex flex-col gap-4 transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:gap-4 gap-2">
-        <div className="relative w-16 h-16 flex items-center justify-center bg-blue-100 rounded-full">
-          <img
-            className="w-14 h-auto object-contain"
-            src={data.companyPhoto}
-            alt=""
-          />
+    <div
+      className="bg-white rounded-2xl shadow hover:shadow-lg p-4 transition cursor-pointer"
+      onClick={() => setIsOpen(!isOpen)}
+    >
+      {console.log(data)}
+      {/* Top Section */}
+      <div className="flex gap-3 items-center">
+        <div className="w-[15%]">
+          <div className="w-10 h-10 rounded-full bg-[#fff] overflow-hidden flex items-center justify-center border">
+            {data.companyPhoto !== null ? (
+              <img
+                src={data.companyPhoto}
+                alt="Company logo"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <div className="text-sm text-gray-500">LOGO</div>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 text-left">
-          <h2 className="text-xl font-semibold">{data.name}</h2>
-          <p className="text-gray-600">
-            {data.companyName}, {data.location}
+        <div>
+          <h2 className="font-semibold text-lg">{data.name}</h2>
+          <p
+            onClick={() => {
+              navigate(`/companies/${data.companyId}`);
+            }}
+            className="text-sm text-blue-600 underline"
+          >
+            {data.companyName}
           </p>
-          {data.urgent && (
-            <span className="inline-block mt-2 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
-              Urgent Hiring
-            </span>
-          )}
         </div>
       </div>
-
-      {/* Description Section */}
-      {data.description && (
-        <div>
-          <h3 className="text-md font-semibold text-gray-800 mb-1">
-            Description
-          </h3>
-          <div
-            className="text-gray-700 text-sm"
-            dangerouslySetInnerHTML={{ __html: data.description }}
-          />
+      <div className="flex items-center justify-between mt-2 text-[#555]">
+        <div className="flex items-center gap-1">
+          ₮<span>{formatSalary(data.salary)}</span>
         </div>
-      )}
-
-      {data.introductionText && (
-        <div>
-          <h3 className="text-md font-semibold text-gray-800 mb-1">
-            Introduntion
-          </h3>
-          <div
-            className="text-gray-700 text-sm"
-            dangerouslySetInnerHTML={{ __html: data.introductionText }}
-          />
+        <div className="flex items-center gap-1 text-xs">
+          <FiCalendar className="text-[#555]" />
+          <span>{formatMongolianDate(data.createdDate)}</span>
         </div>
-      )}
-
-      {/* Requirement Section */}
-      {data.requirementText && (
-        <div>
-          <h3 className="text-md font-semibold text-gray-800 mb-1">
-            Requirements
-          </h3>
-          <div
-            className="text-gray-700 text-sm"
-            dangerouslySetInnerHTML={{ __html: data.requirementText }}
-          />
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-2 gap-2">
-        <div className="flex flex-col text-sm text-gray-600">
-          <span>{formatSalary(data.salary)}</span>
-          <span className="text-xs text-gray-500">
-            Posted: {getPostedDaysAgo(data.createdDate)}
-          </span>
-        </div>
-        <button
-          onClick={() => {
-            window.open(
-              `https://chat.oneplace.hr/chat/${data.companyId}/${data.id}`,
-              "_blank"
-            );
-          }}
-          className="bg-[#F48D7E] hover:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium w-full sm:w-auto"
-        >
-          Apply Now
-        </button>
       </div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden mt-4 space-y-3 text-sm text-gray-700"
+          >
+            {data.introductionText && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1">
+                  Introduction
+                </h3>
+                <div
+                  dangerouslySetInnerHTML={{ __html: data.introductionText }}
+                />
+              </div>
+            )}
+            {data.requirementText && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1">
+                  Requirements
+                </h3>
+                <div
+                  dangerouslySetInnerHTML={{ __html: data.requirementText }}
+                />
+              </div>
+            )}
+            {data.description && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1">
+                  Description
+                </h3>
+                <div dangerouslySetInnerHTML={{ __html: data.description }} />
+              </div>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(
+                  `https://chat.oneplace.hr/chat/${data.companyId}/${data.id}`,
+                  "_blank"
+                );
+              }}
+              className="bg-[#F48D7E] hover:opacity-70 text-white px-4 py-2 rounded text-sm font-medium"
+            >
+              Apply Now
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -122,9 +154,7 @@ const CompaniesAss = () => {
 
   useEffect(() => {
     axios
-      .get(
-        `https://oneplace-hr-326159028339.asia-southeast1.run.app/v1/assessment/companies/${id}`
-      )
+      .get(`http://localhost:8080/v1/assessment/companies/${id}`)
       .then((data) => {
         setData(data.data);
       })
@@ -167,30 +197,32 @@ const CompaniesAss = () => {
   return (
     <div className="bg-gray-100">
       <div className="py-11 m-auto w-10/12 ">
-        <div className="flex items-center gap-6 mb-2">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 overflow-hidden ">
-            {data.company.photoUrl === null ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-12 h-12 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 10h18M9 21V6a3 3 0 116 0v15"
+        <div className="flex items-center gap-6 mb-4">
+          <div className="w-[15%]">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 overflow-hidden bg-[#fff]">
+              {data.company.photoUrl === null ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-12 h-12 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 10h18M9 21V6a3 3 0 116 0v15"
+                  />
+                </svg>
+              ) : (
+                <img
+                  src={data.company.photoUrl}
+                  alt="Company Logo"
+                  className="w-full h-auto object-cover"
                 />
-              </svg>
-            ) : (
-              <img
-                src={data.company.photoUrl}
-                alt="Company Logo"
-                className="w-full h-auto object-cover"
-              />
-            )}
+              )}
+            </div>
           </div>
           <h2 className="text-2xl font-semibold ">
             {data.company.name} нийт ажлын байр
@@ -201,7 +233,7 @@ const CompaniesAss = () => {
           <input
             type="text"
             placeholder="Ажлын гарчиг хайх..."
-            className="border px-3 py-2 rounded w-full md:w-64"
+            className="border px-3 py-2 rounded-xl w-full md:w-[800px] "
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -214,7 +246,7 @@ const CompaniesAss = () => {
         </div>
 
         <div className=" m-auto sm:flex sm:justify-between sm:gap-6 sm:items-start block">
-          <div className="sm:w-[20%] w-full shadow-custom rounded-lg p-6 mb-8 sm:mb-0">
+          <div className="sm:w-[20%] w-full shadow-custom rounded-lg p-6 mb-8 sm:mb-0 bg-[#fff]">
             <p className="text-lg font-bold mb-4">Filters</p>
             <div className="mb-6">
               <p className="mb-2 font-semibold">Job type</p>
@@ -279,7 +311,7 @@ const CompaniesAss = () => {
               </div>
             </div>
           </div>
-          <div className="sm:max-h-[96vh] overflow-y-scroll  w-full sm:w-[80%] space-y-4 py-2">
+          <div className="sm:max-h-[88vh] overflow-y-scroll  w-full sm:w-[80%] space-y-4 py-2">
             {filteredJobs?.map((data, index) => (
               <Card key={index} data={data} />
             ))}

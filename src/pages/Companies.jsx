@@ -30,7 +30,7 @@ const Card = ({ data }) => {
           <img
             src={data.photoUrl}
             alt="Company Logo"
-            className="w-full h-auto object-cover"
+            className="w-24 h-24 object-contain"
           />
         )}
       </div>
@@ -60,9 +60,7 @@ const Companies = () => {
 
   useEffect(() => {
     axios
-      .get(
-        `https://oneplace-hr-326159028339.asia-southeast1.run.app/v1/assessment/companies`
-      )
+      .get(`http://localhost:8080/v1/assessment/companies`)
       .then((data) => {
         setList(data.data);
       })

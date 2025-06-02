@@ -1,7 +1,10 @@
 import React from "react";
 // import { FaStar } from "react-icons/fa";
 import { useEffect, useState } from "react";
+import { FiCalendar } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const companies = [
   { name: "Rio Tinto", rating: 4.2 },
@@ -21,98 +24,127 @@ const formatSalary = (value) => {
 };
 
 function formatMongolianDate(isoString) {
+  const now = new Date();
   const date = new Date(isoString);
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1; // getMonth() is zero-based
-  const day = date.getDate();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+  const diffWeek = Math.floor(diffDay / 7);
+  const diffMonth = Math.floor(diffDay / 30);
+  const diffYear = Math.floor(diffDay / 365);
 
-  return `${year} оны ${month}-р сарын ${day}`;
+  if (diffSec < 60) return `${diffSec} сек өмнө`;
+  if (diffMin < 60) return `${diffMin} мин өмнө`;
+  if (diffHr < 24) return `${diffHr} цагийн өмнө`;
+  if (diffDay < 7) return `${diffDay} өдрийн өмнө`;
+  if (diffDay < 30) return `${diffWeek} 7 хоногийн өмнө`;
+  if (diffDay < 365) return `${diffMonth} сарын өмнө`;
+  return `${diffYear} жилийн өмнө`;
 }
 
 const Card = ({ data }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-white rounded-2xl shadow-md flex flex-col gap-4 transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:gap-4 gap-2">
-        <div className="relative w-16 h-16 flex items-center justify-center bg-blue-100 rounded-full">
-          <img
-            className="w-14 h-auto object-contain"
-            src={data.companyPhoto}
-            alt=""
-          />
+    <div
+      className="bg-white rounded-2xl shadow hover:shadow-lg p-4 transition cursor-pointer"
+      onClick={() => setIsOpen(!isOpen)}
+    >
+      {console.log(data)}
+      {/* Top Section */}
+      <div className="flex gap-3 items-center">
+        <div className="w-[15%]">
+          <div className="w-10 h-10 rounded-full bg-[#fff] overflow-hidden flex items-center justify-center border">
+            {data.companyPhoto !== null ? (
+              <img
+                src={data.companyPhoto}
+                alt="Company logo"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <div className="text-sm text-gray-500">LOGO</div>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 text-left">
-          <h2 className="text-xl font-semibold">{data.name}</h2>
-          <p className="text-gray-600">
-            {data.companyName}, {data.location}
+        <div>
+          <h2 className="font-semibold text-lg">{data.name}</h2>
+          <p
+            onClick={() => {
+              navigate(`/companies/${data.companyId}`);
+            }}
+            className="text-sm text-blue-600 underline"
+          >
+            {data.companyName}
           </p>
-          {data.urgent && (
-            <span className="inline-block mt-2 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
-              Urgent Hiring
-            </span>
-          )}
         </div>
       </div>
-
-      {/* Description Section */}
-      {data.description && (
-        <div>
-          <h3 className="text-md font-semibold text-gray-800 mb-1">
-            Description
-          </h3>
-          <div
-            className="text-gray-700 text-sm"
-            dangerouslySetInnerHTML={{ __html: data.description }}
-          />
+      <div className="flex items-center justify-between mt-2 text-[#555]">
+        <div className="flex items-center gap-1">
+          ₮<span>{formatSalary(data.salary)}</span>
         </div>
-      )}
-
-      {data.introductionText && (
-        <div>
-          <h3 className="text-md font-semibold text-gray-800 mb-1">
-            Introduntion
-          </h3>
-          <div
-            className="text-gray-700 text-sm"
-            dangerouslySetInnerHTML={{ __html: data.introductionText }}
-          />
+        <div className="flex items-center gap-1 text-xs">
+          <FiCalendar className="text-[#555]" />
+          <span>{formatMongolianDate(data.createdDate)}</span>
         </div>
-      )}
-
-      {/* Requirement Section */}
-      {data.requirementText && (
-        <div>
-          <h3 className="text-md font-semibold text-gray-800 mb-1">
-            Requirements
-          </h3>
-          <div
-            className="text-gray-700 text-sm"
-            dangerouslySetInnerHTML={{ __html: data.requirementText }}
-          />
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-2 gap-2">
-        <div className="flex flex-col text-sm text-gray-600">
-          <span>{formatSalary(data.salary)}</span>
-          <span className="text-xs text-gray-500">
-            Posted: {formatMongolianDate(data.createdDate)}
-          </span>
-        </div>
-        <button
-          onClick={() => {
-            window.open(
-              `https://chat.oneplace.hr/chat/${data.companyId}/${data.id}`,
-              "_blank"
-            );
-          }}
-          className="bg-[#F48D7E] hover:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium w-full sm:w-auto"
-        >
-          Apply Now
-        </button>
       </div>
+      {/* Dropdown Animation Section */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden mt-4 space-y-3 text-sm text-gray-700"
+          >
+            {data.introductionText && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1">
+                  Introduction
+                </h3>
+                <div
+                  dangerouslySetInnerHTML={{ __html: data.introductionText }}
+                />
+              </div>
+            )}
+            {data.requirementText && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1">
+                  Requirements
+                </h3>
+                <div
+                  dangerouslySetInnerHTML={{ __html: data.requirementText }}
+                />
+              </div>
+            )}
+            {data.description && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-1">
+                  Description
+                </h3>
+                <div dangerouslySetInnerHTML={{ __html: data.description }} />
+              </div>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(
+                  `https://chat.oneplace.hr/chat/${data.companyId}/${data.id}`,
+                  "_blank"
+                );
+              }}
+              className="bg-[#F48D7E] hover:opacity-70 text-white px-4 py-2 rounded text-sm font-medium"
+            >
+              Apply Now
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -135,9 +167,7 @@ const JobSearch = () => {
   useEffect(() => {
     setLoading(true);
     axios
-      .get(
-        "https://oneplace-hr-326159028339.asia-southeast1.run.app/v1/assessment/jobs/all"
-      )
+      .get("http://localhost:8080/v1/assessment/jobs/all")
       .then((data) => {
         setList(data.data);
         setLoading(false);
@@ -242,7 +272,7 @@ const JobSearch = () => {
         </div>
       </div>
       <div className="sm:px-4 py-8 w-10/12 m-auto sm:flex sm:justify-between sm:gap-6 sm:items-start block">
-        <div className="sm:w-[20%] w-full shadow-custom rounded-lg p-6 mb-8 sm:mb-0">
+        <div className="sm:w-[20%] w-full shadow-custom rounded-lg p-6 mb-8 sm:mb-0 bg-[#fff]">
           <p className="text-lg font-bold mb-4">Filters</p>
           <div className="mb-6">
             <p className="mb-2 font-semibold">Job type</p>
@@ -307,7 +337,7 @@ const JobSearch = () => {
             </div>
           </div>
         </div>
-        <div className="sm:max-h-[96vh] overflow-y-scroll  w-full sm:w-[80%] space-y-4 py-2">
+        <div className="sm:max-h-[88vh] overflow-y-scroll  w-full sm:w-[80%] space-y-4 py-2">
           {filteredList?.map((data, index) => (
             <Card key={index} data={data} />
           ))}
