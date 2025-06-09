@@ -8,7 +8,7 @@ const Card = ({ data }) => {
   return (
     <div
       key={data.id}
-      className="max-w-sm w-full bg-white rounded-2xl shadow-md overflow-hidden border p-4 flex flex-col gap-4 h-[280px] items-center justify-between "
+      className="max-w-[30%] w-full bg-white rounded-2xl shadow-md overflow-hidden border p-4 flex flex-col gap-4 h-[280px] items-center justify-between "
     >
       <div className="w-24 h-24 rounded-full mx-auto flex items-center justify-center border overflow-hidden ">
         {data.photoUrl === null ? (
@@ -60,7 +60,9 @@ const Companies = () => {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:8080/v1/assessment/companies`)
+      .get(
+        `https://oneplace-hr-326159028339.asia-southeast1.run.app/v1/assessment/companies`
+      )
       .then((data) => {
         setList(data.data);
       })
@@ -78,8 +80,8 @@ const Companies = () => {
   }
 
   return (
-    <div className=" w-10/12 m-auto py-11 ">
-      <div className="flex items-center flex-wrap gap-6">
+    <div className=" w-9/12 m-auto py-11 ">
+      <div className="flex items-center flex-wrap justify-center gap-6">
         {list.map((data) => (
           <Card key={data.id} data={data} />
         ))}

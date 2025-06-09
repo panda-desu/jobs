@@ -6,20 +6,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const companies = [
-  { name: "Rio Tinto", rating: 4.2 },
-  { name: "BHP", rating: 4.0 },
-  { name: "Vale", rating: 3.9 },
-  { name: "Anglo American", rating: 4.1 },
-  { name: "Barrick Gold", rating: 3.8 },
-  { name: "Newmont", rating: 4.0 },
-];
+// const companies = [
+//   { name: "Rio Tinto", rating: 4.2 },
+//   { name: "BHP", rating: 4.0 },
+//   { name: "Vale", rating: 3.9 },
+//   { name: "Anglo American", rating: 4.1 },
+//   { name: "Barrick Gold", rating: 3.8 },
+//   { name: "Newmont", rating: 4.0 },
+// ];
 
 const formatSalary = (value) => {
   if (value >= 1000000) {
-    return (value / 1000000).toFixed(value % 1000000 === 0 ? 0 : 1) + "сая";
+    return (value / 1000000).toFixed(value % 1000000 === 0 ? 0 : 1) + " сая";
   } else {
-    return (value / 1000).toFixed(0) + "мянга";
+    return (value / 1000).toFixed(0) + " мянга";
   }
 };
 
@@ -39,7 +39,7 @@ function formatMongolianDate(isoString) {
   if (diffMin < 60) return `${diffMin} мин өмнө`;
   if (diffHr < 24) return `${diffHr} цагийн өмнө`;
   if (diffDay < 7) return `${diffDay} өдрийн өмнө`;
-  if (diffDay < 30) return `${diffWeek} 7 хоногийн өмнө`;
+  if (diffDay < 30) return `${diffWeek * 7} өдрийн өмнө`;
   if (diffDay < 365) return `${diffMonth} сарын өмнө`;
   return `${diffYear} жилийн өмнө`;
 }
@@ -53,10 +53,9 @@ const Card = ({ data }) => {
       className="bg-white rounded-2xl shadow hover:shadow-lg p-4 transition cursor-pointer"
       onClick={() => setIsOpen(!isOpen)}
     >
-      {console.log(data)}
       {/* Top Section */}
       <div className="flex gap-3 items-center">
-        <div className="w-[15%]">
+        <div className="w-[15%] md:w-[5%]">
           <div className="w-10 h-10 rounded-full bg-[#fff] overflow-hidden flex items-center justify-center border">
             {data.companyPhoto !== null ? (
               <img
@@ -71,7 +70,7 @@ const Card = ({ data }) => {
         </div>
 
         <div>
-          <h2 className="font-semibold text-lg">{data.name}</h2>
+          <h2 className="font-semibold text-base md:text-lg">{data.name}</h2>
           <p
             onClick={() => {
               navigate(`/companies/${data.companyId}`);
@@ -104,9 +103,7 @@ const Card = ({ data }) => {
           >
             {data.introductionText && (
               <div>
-                <h3 className="font-semibold text-gray-800 mb-1">
-                  Introduction
-                </h3>
+                <h3 className="font-semibold text-gray-800 mb-1">Үүрэг</h3>
                 <div
                   dangerouslySetInnerHTML={{ __html: data.introductionText }}
                 />
@@ -114,9 +111,7 @@ const Card = ({ data }) => {
             )}
             {data.requirementText && (
               <div>
-                <h3 className="font-semibold text-gray-800 mb-1">
-                  Requirements
-                </h3>
+                <h3 className="font-semibold text-gray-800 mb-1">Шаардлага</h3>
                 <div
                   dangerouslySetInnerHTML={{ __html: data.requirementText }}
                 />
@@ -125,7 +120,7 @@ const Card = ({ data }) => {
             {data.description && (
               <div>
                 <h3 className="font-semibold text-gray-800 mb-1">
-                  Description
+                  Тодорхойлолт
                 </h3>
                 <div dangerouslySetInnerHTML={{ __html: data.description }} />
               </div>
@@ -154,6 +149,7 @@ const JobSearch = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedSalaryRanges, setSelectedSalaryRanges] = useState([]);
+  const [sortOption, setSortOption] = useState("salary"); // default is by date
 
   const salaryRanges = [
     { label: "1.5 сая хүртэл", min: 0, max: 1500000 },
@@ -167,7 +163,9 @@ const JobSearch = () => {
   useEffect(() => {
     setLoading(true);
     axios
-      .get("http://localhost:8080/v1/assessment/jobs/all")
+      .get(
+        "https://oneplace-hr-326159028339.asia-southeast1.run.app/v1/assessment/jobs/all"
+      )
       .then((data) => {
         setList(data.data);
         setLoading(false);
@@ -193,35 +191,42 @@ const JobSearch = () => {
     );
   };
 
-  const filteredList = list?.filter((item) => {
-    // Salary filter
-    const matchesSalary =
-      selectedSalaryRanges.length === 0 ||
-      selectedSalaryRanges.some((rangeLabel) => {
-        const range = salaryRanges.find((r) => r.label === rangeLabel);
-        const salary = Number(item.salary);
-        return salary >= range.min && salary < range.max;
-      });
+  const filteredList = list
+    ?.filter((item) => {
+      const matchesSalary =
+        selectedSalaryRanges.length === 0 ||
+        selectedSalaryRanges.some((rangeLabel) => {
+          const range = salaryRanges.find((r) => r.label === rangeLabel);
+          const salary = Number(item.salary);
+          return salary >= range.min && salary < range.max;
+        });
 
-    // Text search filter
-    const lowerSearch = searchTerm.toLowerCase();
-    const matchesSearch =
-      item.job?.toLowerCase().includes(lowerSearch) ||
-      item.companyName?.toLowerCase().includes(lowerSearch) ||
-      item.requirementText?.toLowerCase().includes(lowerSearch) ||
-      item.description?.toLowerCase().includes(lowerSearch);
+      const lowerSearch = searchTerm.toLowerCase();
+      const matchesSearch =
+        item.job?.toLowerCase().includes(lowerSearch) ||
+        item.companyName?.toLowerCase().includes(lowerSearch) ||
+        item.requirementText?.toLowerCase().includes(lowerSearch) ||
+        item.description?.toLowerCase().includes(lowerSearch);
 
-    return matchesSalary && matchesSearch;
-  });
+      return matchesSalary && matchesSearch;
+    })
+    ?.sort((a, b) => {
+      if (sortOption === "salary") {
+        return Number(b.salary) - Number(a.salary);
+      } else if (sortOption === "date") {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      return 0;
+    });
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 pb-20">
       <div className="bg-gradient-to-r from-blue-50 to-gray-100 py-12 flex flex-col items-center justify-center md:px-0 px-4 ">
-        <p className="md:text-4xl text-3xl font-semibold  text-center">
-          Find Your Next Mining Job
+        <p className="md:text-4xl text-3xl font-semibold text-center">
+          CV үүсгэдэг үе өнгөрсөн
         </p>
         <p className="mt-4 text-lg text-gray-600 text-center max-w-xl">
-          Discover thousands of mining jobs from top companies worldwide
+          Apply товч дараад шууд ярилцлагад ор
         </p>
 
         {/* Search bar */}
@@ -242,23 +247,21 @@ const JobSearch = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Job title, keywords, or company"
+                placeholder="Ажлын нэр, түлхүүр үг, эсвэл компани"
                 className="w-full outline-none text-gray-700 placeholder-gray-400"
               />
             </div>
 
             <button className="bg-[#F48D7E] text-white px-6 py-3 rounded-xl font-medium hover:opacity-50 transition sm:mt-0 mt-2">
-              Search Jobs
+              Ажил хайх{" "}
             </button>
           </div>
         </div>
 
         {/* Popular Searches */}
-        <div className="mt-6 text-sm flex flex-wrap justify-center gap-3">
+        {/* <div className="mt-6 text-sm flex flex-wrap justify-center gap-3">
           <p className="font-medium text-gray-600">Popular Searches:</p>
-          <button className="text-[#F48D7E] hover:underline">
-            Mining Engineer
-          </button>
+          <button className="text-[#F48D7E] hover:underline">Engineer</button>
           <p className="text-gray-400">•</p>
           <button className="text-[#F48D7E] hover:underline">Geologist</button>
           <p className="text-gray-400">•</p>
@@ -269,59 +272,72 @@ const JobSearch = () => {
           <button className="text-[#F48D7E] hover:underline">
             Safety Officer
           </button>
-        </div>
+        </div> */}
       </div>
-      <div className="sm:px-4 py-8 w-10/12 m-auto sm:flex sm:justify-between sm:gap-6 sm:items-start block">
+      <div className="flex justify-end w-9/12 m-auto pe-4">
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
+          className="border px-2 py-1.5 rounded-lg text-sm"
+        >
+          <option value="date">Хамгийн сүүлд нэмэгдсэн</option>
+          <option value="salary">Хамгийн өндөр цалинтай</option>
+        </select>
+      </div>
+      <div className="sm:px-4 py-8 w-9/12 m-auto sm:flex sm:justify-between sm:gap-6 sm:items-start block">
         <div className="sm:w-[20%] w-full shadow-custom rounded-lg p-6 mb-8 sm:mb-0 bg-[#fff]">
-          <p className="text-lg font-bold mb-4">Filters</p>
-          <div className="mb-6">
-            <p className="mb-2 font-semibold">Job type</p>
+          <p className="text-lg font-bold mb-4">Шүүлтүүрүүд</p>
+
+          {/* <div className="mb-6">
+            <p className="mb-2 font-semibold">Ажлын төрөл</p>
             <div className="flex flex-col space-y-2">
               <div className="flex items-center gap-2">
                 <input className="rounded" type="checkbox" />
-                <p>Full-time</p>
+                <p>Бүтэн цагийн</p>
               </div>
               <div className="flex items-center gap-2">
                 <input className="rounded" type="checkbox" />
-                <p>Part-time</p>
+                <p>Хагас цагийн</p>
               </div>
               <div className="flex items-center gap-2">
                 <input className="rounded" type="checkbox" />
-                <p>Consulting</p>
+                <p>Зөвлөх</p>
               </div>
             </div>
-          </div>
+          </div> */}
+          {/* 
           <div className="mb-6">
-            <p className="mb-2 font-semibold">Experience Level</p>
+            <p className="mb-2 font-semibold">Ажлын туршлага</p>
             <div className="flex flex-col space-y-2">
               <div className="flex items-center gap-2">
                 <input className="rounded" type="checkbox" />
-                <p>No experience</p>
+                <p>Туршлагагүй</p>
               </div>
               <div className="flex items-center gap-2">
                 <input className="rounded" type="checkbox" />
-                <p>1-5 year</p>
+                <p>1-5 жил</p>
               </div>
               <div className="flex items-center gap-2">
                 <input className="rounded" type="checkbox" />
-                <p>5-8 year</p>
+                <p>5-8 жил</p>
               </div>
               <div className="flex items-center gap-2">
                 <input className="rounded" type="checkbox" />
-                <p>8-10 year</p>
+                <p>8-10 жил</p>
               </div>
               <div className="flex items-center gap-2">
                 <input className="rounded" type="checkbox" />
-                <p>10-15 year</p>
+                <p>10-15 жил</p>
               </div>
               <div className="flex items-center gap-2">
                 <input className="rounded" type="checkbox" />
-                <p>15+ year</p>
+                <p>15+ жил</p>
               </div>
             </div>
-          </div>
+          </div> */}
+
           <div className="mb-6">
-            <p className="mb-2 font-semibold">Salary range</p>
+            <p className="mb-2 font-semibold">Цалингийн хүрээ</p>
             <div className="flex flex-col space-y-2">
               {salaryRanges.map((range) => (
                 <div className="flex items-center gap-2" key={range.label}>
@@ -337,6 +353,7 @@ const JobSearch = () => {
             </div>
           </div>
         </div>
+
         <div className="sm:max-h-[88vh] overflow-y-scroll  w-full sm:w-[80%] space-y-4 py-2">
           {filteredList?.map((data, index) => (
             <Card key={index} data={data} />
@@ -344,9 +361,9 @@ const JobSearch = () => {
         </div>
       </div>
 
-      <div className="px-4  py-12 w-10/12 mx-auto">
+      {/* <div className="px-4  py-12 w-9/12 mx-auto">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
-          Featured Mining Companies
+          Featured  Companies
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {companies.map((company, index) => (
@@ -366,7 +383,7 @@ const JobSearch = () => {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

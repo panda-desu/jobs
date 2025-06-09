@@ -6,9 +6,9 @@ import { useNavigate, useParams } from "react-router";
 
 const formatSalary = (value) => {
   if (value >= 1000000) {
-    return (value / 1000000).toFixed(value % 1000000 === 0 ? 0 : 1) + "сая";
+    return (value / 1000000).toFixed(value % 1000000 === 0 ? 0 : 1) + " сая";
   } else {
-    return (value / 1000).toFixed(0) + "мянга";
+    return (value / 1000).toFixed(0) + " мянга";
   }
 };
 
@@ -28,7 +28,7 @@ function formatMongolianDate(isoString) {
   if (diffMin < 60) return `${diffMin} мин өмнө`;
   if (diffHr < 24) return `${diffHr} цагийн өмнө`;
   if (diffDay < 7) return `${diffDay} өдрийн өмнө`;
-  if (diffDay < 30) return `${diffWeek} 7 хоногийн өмнө`;
+  if (diffDay < 30) return `${diffWeek * 7} өдрийн өмнө`;
   if (diffDay < 365) return `${diffMonth} сарын өмнө`;
   return `${diffYear} жилийн өмнө`;
 }
@@ -42,10 +42,9 @@ const Card = ({ data }) => {
       className="bg-white rounded-2xl shadow hover:shadow-lg p-4 transition cursor-pointer"
       onClick={() => setIsOpen(!isOpen)}
     >
-      {console.log(data)}
       {/* Top Section */}
       <div className="flex gap-3 items-center">
-        <div className="w-[15%]">
+        <div className="w-[15%] md:w-[5%]">
           <div className="w-10 h-10 rounded-full bg-[#fff] overflow-hidden flex items-center justify-center border">
             {data.companyPhoto !== null ? (
               <img
@@ -92,9 +91,7 @@ const Card = ({ data }) => {
           >
             {data.introductionText && (
               <div>
-                <h3 className="font-semibold text-gray-800 mb-1">
-                  Introduction
-                </h3>
+                <h3 className="font-semibold text-gray-800 mb-1">Үүрэг</h3>
                 <div
                   dangerouslySetInnerHTML={{ __html: data.introductionText }}
                 />
@@ -102,9 +99,7 @@ const Card = ({ data }) => {
             )}
             {data.requirementText && (
               <div>
-                <h3 className="font-semibold text-gray-800 mb-1">
-                  Requirements
-                </h3>
+                <h3 className="font-semibold text-gray-800 mb-1">Шаардлага</h3>
                 <div
                   dangerouslySetInnerHTML={{ __html: data.requirementText }}
                 />
@@ -113,7 +108,7 @@ const Card = ({ data }) => {
             {data.description && (
               <div>
                 <h3 className="font-semibold text-gray-800 mb-1">
-                  Description
+                  Тодорхойлолт
                 </h3>
                 <div dangerouslySetInnerHTML={{ __html: data.description }} />
               </div>
@@ -142,6 +137,7 @@ const CompaniesAss = () => {
   const [data, setData] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSalaryRanges, setSelectedSalaryRanges] = useState([]);
+  const [sortOption, setSortOption] = useState("salary");
 
   const salaryRanges = [
     { label: "1.5 сая хүртэл", min: 0, max: 1500000 },
@@ -154,7 +150,9 @@ const CompaniesAss = () => {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:8080/v1/assessment/companies/${id}`)
+      .get(
+        `https://oneplace-hr-326159028339.asia-southeast1.run.app/v1/assessment/companies/${id}`
+      )
       .then((data) => {
         setData(data.data);
       })
@@ -179,26 +177,39 @@ const CompaniesAss = () => {
     );
   };
 
-  const filteredJobs = data.assessments.filter((job) => {
-    const matchesSearch = job.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+  const filteredJobs = data.assessments
+    ?.filter((item) => {
+      const matchesSalary =
+        selectedSalaryRanges.length === 0 ||
+        selectedSalaryRanges.some((rangeLabel) => {
+          const range = salaryRanges.find((r) => r.label === rangeLabel);
+          const salary = Number(item.salary);
+          return salary >= range.min && salary < range.max;
+        });
 
-    const matchesSalary =
-      selectedSalaryRanges.length === 0 ||
-      selectedSalaryRanges.some((rangeLabel) => {
-        const range = salaryRanges.find((r) => r.label === rangeLabel);
-        return job.salary >= range.min && job.salary < range.max;
-      });
+      const lowerSearch = searchTerm.toLowerCase();
+      const matchesSearch =
+        item.job?.toLowerCase().includes(lowerSearch) ||
+        item.companyName?.toLowerCase().includes(lowerSearch) ||
+        item.requirementText?.toLowerCase().includes(lowerSearch) ||
+        item.description?.toLowerCase().includes(lowerSearch);
 
-    return matchesSearch && matchesSalary;
-  });
+      return matchesSalary && matchesSearch;
+    })
+    ?.sort((a, b) => {
+      if (sortOption === "salary") {
+        return Number(b.salary) - Number(a.salary);
+      } else if (sortOption === "date") {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      return 0;
+    });
 
   return (
     <div className="bg-gray-100">
-      <div className="py-11 m-auto w-10/12 ">
+      <div className="py-11 m-auto w-9/12 ">
         <div className="flex items-center gap-6 mb-4">
-          <div className="w-[15%]">
+          <div className="w-[15%] md:w-[5%]">
             <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 overflow-hidden bg-[#fff]">
               {data.company.photoUrl === null ? (
                 <svg
@@ -244,58 +255,70 @@ const CompaniesAss = () => {
             </span>
           </div>
         </div>
-
+        <div className="flex justify-end  pb-3">
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+            className="border px-2 py-1.5 rounded-lg text-sm"
+          >
+            <option value="date">Хамгийн сүүлд нэмэгдсэн</option>
+            <option value="salary">Хамгийн өндөр цалинтай</option>
+          </select>
+        </div>
         <div className=" m-auto sm:flex sm:justify-between sm:gap-6 sm:items-start block">
           <div className="sm:w-[20%] w-full shadow-custom rounded-lg p-6 mb-8 sm:mb-0 bg-[#fff]">
-            <p className="text-lg font-bold mb-4">Filters</p>
-            <div className="mb-6">
-              <p className="mb-2 font-semibold">Job type</p>
+            <p className="text-lg font-bold mb-4">Шүүлтүүрүүд</p>
+
+            {/* <div className="mb-6">
+              <p className="mb-2 font-semibold">Ажлын төрөл</p>
               <div className="flex flex-col space-y-2">
                 <div className="flex items-center gap-2">
                   <input className="rounded" type="checkbox" />
-                  <p>Full-time</p>
+                  <p>Бүтэн цагийн</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input className="rounded" type="checkbox" />
-                  <p>Part-time</p>
+                  <p>Хагас цагийн</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input className="rounded" type="checkbox" />
-                  <p>Consulting</p>
+                  <p>Зөвлөх</p>
                 </div>
               </div>
-            </div>
-            <div className="mb-6">
-              <p className="mb-2 font-semibold">Experience Level</p>
+            </div> */}
+
+            {/* <div className="mb-6">
+              <p className="mb-2 font-semibold">Ажлын туршлага</p>
               <div className="flex flex-col space-y-2">
                 <div className="flex items-center gap-2">
                   <input className="rounded" type="checkbox" />
-                  <p>No experience</p>
+                  <p>Туршлагагүй</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input className="rounded" type="checkbox" />
-                  <p>1-5 year</p>
+                  <p>1-5 жил</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input className="rounded" type="checkbox" />
-                  <p>5-8 year</p>
+                  <p>5-8 жил</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input className="rounded" type="checkbox" />
-                  <p>8-10 year</p>
+                  <p>8-10 жил</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input className="rounded" type="checkbox" />
-                  <p>10-15 year</p>
+                  <p>10-15 жил</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input className="rounded" type="checkbox" />
-                  <p>15+ year</p>
+                  <p>15+ жил</p>
                 </div>
               </div>
-            </div>
+            </div> */}
+
             <div className="mb-6">
-              <p className="mb-2 font-semibold">Salary range</p>
+              <p className="mb-2 font-semibold">Цалингийн хүрээ</p>
               <div className="flex flex-col space-y-2">
                 {salaryRanges.map((range) => (
                   <div className="flex items-center gap-2" key={range.label}>

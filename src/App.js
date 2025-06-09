@@ -9,7 +9,7 @@ function App() {
     <Router>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/jobs" element={<JobSearch />} />
+          <Route path="/" element={<JobSearch />} />
           <Route path="/companies" element={<Companies />} />
           <Route path="/companies/:id" element={<CompaniesAss />} />
         </Route>
